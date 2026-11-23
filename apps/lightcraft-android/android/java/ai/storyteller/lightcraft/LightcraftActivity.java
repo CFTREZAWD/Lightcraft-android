@@ -50,7 +50,7 @@ public class LightcraftActivity extends NativeActivity {
      * allows several files; each is copied into `destDir` and the copies' paths are reported.
      */
     public void pick(final int id, final String[] mimes, final boolean multiple, final String destDir) {
-        runOnUiThread(() -> {
+        runOnUiThread(new Runnable() { @Override public void run() {
             try {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -64,7 +64,7 @@ public class LightcraftActivity extends NativeActivity {
             } catch (Exception e) {
                 nativePicked(id, new String[0], "The file picker couldn't open: " + e);
             }
-        });
+        }});
     }
 
     private String pendingDest = null;
@@ -89,7 +89,7 @@ public class LightcraftActivity extends NativeActivity {
         }
         final String dest = pendingDest;
         // copying a large raw takes a moment: off the UI thread
-        new Thread(() -> {
+        new Thread(new Runnable() { @Override public void run() {
             ArrayList<String> paths = new ArrayList<>();
             String error = null;
             for (Uri uri : uris) {
@@ -100,7 +100,7 @@ public class LightcraftActivity extends NativeActivity {
                 }
             }
             nativePicked(id, paths.toArray(new String[0]), error);
-        }, "lc-pick-copy").start();
+        }}, "lc-pick-copy").start();
     }
 
     /** Copy `uri` into `destDir` under its display name (never replacing a file). */
@@ -161,7 +161,7 @@ public class LightcraftActivity extends NativeActivity {
 
     /** Show or hide the soft keyboard (a text field took or lost the focus). */
     public void showKeyboard(final boolean show) {
-        runOnUiThread(() -> {
+        runOnUiThread(new Runnable() { @Override public void run() {
             InputMethodManager imm = (InputMethodManager) getSystemService(Context.INPUT_METHOD_SERVICE);
             View view = getWindow().getDecorView();
             if (imm == null || view == null) {
@@ -175,19 +175,19 @@ public class LightcraftActivity extends NativeActivity {
             } else {
                 imm.hideSoftInputFromWindow(view.getWindowToken(), 0);
             }
-        });
+        }});
     }
 
     /** Open an https link in the browser. */
     public void openUrl(final String url) {
-        runOnUiThread(() -> {
+        runOnUiThread(new Runnable() { @Override public void run() {
             try {
                 Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
             } catch (Exception ignored) {
             }
-        });
+        }});
     }
 
     /** Whether the photos in shared storage can be listed (the Local panel's Camera and Pictures). */
@@ -197,11 +197,11 @@ public class LightcraftActivity extends NativeActivity {
 
     /** Ask for the media permission (once; Android remembers a refusal). */
     public void requestMediaAccess() {
-        runOnUiThread(() -> {
+        runOnUiThread(new Runnable() { @Override public void run() {
             if (!hasMediaAccess()) {
                 requestPermissions(new String[]{mediaPermission()}, PERMISSION_REQUEST);
             }
-        });
+        }});
     }
 
     private static String mediaPermission() {
