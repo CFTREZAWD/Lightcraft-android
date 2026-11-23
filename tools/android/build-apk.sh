@@ -6,8 +6,8 @@
 #
 #   ANDROID_NDK_HOME=/path/to/ndk ANDROID_HOME=/path/to/sdk tools/android/build-apk.sh [--debug]
 #
-# The APK is signed with a local debug key (target/android/debug.keystore, made on first use);
-# sign with your own key for distribution (apksigner sign --ks …).
+# Signed with LIGHTCRAFT_KEYSTORE (+ LIGHTCRAFT_KEYSTORE_PASSWORD, LIGHTCRAFT_KEY_ALIAS) when set, else with a
+# local debug key (target/android/debug.keystore, made on first use).
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -62,11 +62,17 @@ cp "$STAGE/base.apk" "$STAGE/unaligned.apk"
 APK="$OUT/lightcraft-$VERSION-arm64.apk"
 "$BT/zipalign" -f -P 16 4 "$STAGE/unaligned.apk" "$STAGE/aligned.apk"
 
-KS="$OUT/debug.keystore"
-if [[ ! -f "$KS" ]]; then
-    keytool -genkeypair -keystore "$KS" -storepass android -keypass android -alias debug \
-        -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=LightCraft debug" >/dev/null
+if [[ -n "${LIGHTCRAFT_KEYSTORE:-}" ]]; then
+    # your own key (LIGHTCRAFT_KEYSTORE, LIGHTCRAFT_KEYSTORE_PASSWORD, LIGHTCRAFT_KEY_ALIAS): updates install over each other
+    "$BT/apksigner" sign --ks "$LIGHTCRAFT_KEYSTORE" --ks-pass env:LIGHTCRAFT_KEYSTORE_PASSWORD \
+        --ks-key-alias "${LIGHTCRAFT_KEY_ALIAS:?set LIGHTCRAFT_KEY_ALIAS}" --out "$APK" "$STAGE/aligned.apk"
+else
+    KS="$OUT/debug.keystore"
+    if [[ ! -f "$KS" ]]; then
+        keytool -genkeypair -keystore "$KS" -storepass android -keypass android -alias debug \
+            -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=LightCraft debug" >/dev/null
+    fi
+    "$BT/apksigner" sign --ks "$KS" --ks-pass pass:android --key-pass pass:android --out "$APK" "$STAGE/aligned.apk"
 fi
-"$BT/apksigner" sign --ks "$KS" --ks-pass pass:android --key-pass pass:android --out "$APK" "$STAGE/aligned.apk"
 "$BT/apksigner" verify "$APK"
 echo "== $APK ($(du -h "$APK" | cut -f1))"

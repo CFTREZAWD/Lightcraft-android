@@ -17,6 +17,14 @@ adb install -r target/android/lightcraft-*-arm64.apk
 `--debug` builds the unoptimized library (much slower renders). The APK is signed with a local
 debug key; re-sign it with your own for distribution. Logs: `adb logcat -s LightCraft`.
 
+## Releases
+
+Pushing a tag `android-v<version>` (e.g. `android-v0.21.1-beta.1`; a suffix makes it a pre-release)
+runs `.github/workflows/android-release.yml`: it builds the APK and publishes it with its SHA-256 as a
+GitHub Release, with `docs/android-release-notes.md` as the notes. To sign with your own key, so that
+releases install as updates of each other, add the secrets `ANDROID_KEYSTORE_BASE64`,
+`ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them each run signs with a new debug key.
+
 ## S Pen and active pens
 
 The pen support lives in the Android backend of winit, vendored in `third_party/winit` (patch
