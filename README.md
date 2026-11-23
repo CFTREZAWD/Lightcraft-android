@@ -1,3 +1,9 @@
+> [!IMPORTANT]
+> **This is LightCraft for Android**, a port of [storytold/lightcraft](https://github.com/storytold/lightcraft)
+> (upstream commit `25252399`) to Android tablets and phones, with Samsung **S Pen** / active-pen support:
+> pressure, hover preview, side-button erase, eraser end and palm rejection. Build, pen behaviour and
+> limits: **[docs/android.md](docs/android.md)**. Everything below is the upstream README.
+
 <p align="center">
   <a href="https://getartcraft.com/">
     <picture>

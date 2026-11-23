@@ -1,0 +1,34 @@
+[package]
+name = "lightcraft-android"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "LightCraft for Android: the egui UI and engine as a native activity, with S Pen / active pen input (build with tools/android/build-apk.sh)"
+
+[lints]
+workspace = true
+
+[lib]
+name = "lightcraft_android"
+# cdylib: the shared library the activity loads; rlib: host builds of the platform-neutral parts (tests)
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+lightcraft-engine = { workspace = true, features = ["denoise"] }
+lightcraft-ui-egui = { workspace = true }
+lightcraft-codecs = { workspace = true }
+lightcraft-raster = { workspace = true }
+egui = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+
+[target.'cfg(target_os = "android")'.dependencies]
+eframe = { workspace = true, features = ["default_fonts", "wgpu", "android-native-activity"] }
+# Vulkan, with OpenGL ES as the fallback for devices whose Vulkan driver can't run egui's pipeline
+wgpu = { workspace = true, features = ["gles"] }
+# the patched winit (third_party/winit, patch A1): pen pressure, hover, side button, palm rejection
+winit = { version = "0.30", default-features = false, features = ["android-native-activity"] }
+android_logger = { version = "0.15", default-features = false }
+jni = "0.21"
+
