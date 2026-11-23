@@ -20,7 +20,8 @@ debug key; re-sign it with your own for distribution. Logs: `adb logcat -s Light
 ## Releases
 
 Pushing a tag `android-v<version>` (e.g. `android-v0.21.1-beta.1`; a suffix makes it a pre-release)
-runs `.github/workflows/android-release.yml`: it builds the APK and publishes it with its SHA-256 as a
+(or running `.github/workflows/android-release.yml` by hand with the tag name; the tag is then made on
+the branch's commit) runs the workflow: it builds the APK and publishes it with its SHA-256 as a
 GitHub Release, with `docs/android-release-notes.md` as the notes. To sign with your own key, so that
 releases install as updates of each other, add the secrets `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them each run signs with a new debug key.
