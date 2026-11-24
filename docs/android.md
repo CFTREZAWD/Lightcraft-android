@@ -26,6 +26,28 @@ GitHub Release, with `docs/android-release-notes.md` as the notes. To sign with 
 releases install as updates of each other, add the secrets `ANDROID_KEYSTORE_BASE64`,
 `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`; without them each run signs with a new debug key.
 
+## Updates
+
+LightCraft for Android updates itself from this repository's releases:
+
+- At start (at most about once a day; *Check for updates when LightCraft starts*) and from
+  Help ▸ Check for Updates…, it reads the GitHub Releases tagged `android-v*` and offers the newest
+  one above the installed version. Betas are offered unless *Include beta releases* is off; a
+  version you chose to skip isn't offered again by the check at start.
+- **Download and Install** fetches the `-arm64.apk` asset with its size and SHA-256 checked (the
+  digest GitHub reports for the asset; a release without one isn't installed), then hands it to
+  Android's package installer, which asks you to confirm. The first time, Android asks you to
+  allow LightCraft to install apps.
+- Android installs an update only when it is signed with the same key as the installed app. So
+  releases must be signed with one key: run `tools/android/make-release-key.sh` once and store
+  the three values it prints as the repository secrets `ANDROID_KEYSTORE_BASE64`,
+  `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`. Without them every release gets a new debug
+  key and the update is refused ("signed with another key"): uninstall, then install the new one.
+  `0.21.1-beta.1` was signed that way and has no updater: install the next release by hand once.
+- The version the updater compares is the release's (`LIGHTCRAFT_ANDROID_VERSION`, from its tag);
+  `versionCode` grows with every release, betas included. A build for a fork looks for that
+  fork's releases (`LIGHTCRAFT_UPDATE_REPO`, set by the workflow).
+
 ## S Pen and active pens
 
 The pen support lives in the Android backend of winit, vendored in `third_party/winit` (patch

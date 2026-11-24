@@ -30,9 +30,25 @@ export CARGO_TARGET_AARCH64_LINUX_ANDROID_LINKER="$TC/aarch64-linux-android$API-
 # 16 KB pages (required by Google Play for Android 15+ devices)
 export CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS="${CARGO_TARGET_AARCH64_LINUX_ANDROID_RUSTFLAGS:-} -C link-arg=-Wl,-z,max-page-size=16384"
 
-VERSION="$(grep -m1 '^version' "$ROOT/Cargo.toml" | sed 's/.*"\(.*\)"/\1/')"
-IFS=. read -r MA MI PA <<<"$VERSION"
-CODE=$((MA * 1000000 + MI * 1000 + PA))
+# The release's version (from its tag, e.g. 0.21.1-beta.2), else the workspace's. The app's
+# updater compares it with the releases it finds (it is compiled in, see src/update.rs).
+VERSION="${LIGHTCRAFT_ANDROID_VERSION:-$(grep -m1 '^version' "$ROOT/Cargo.toml" | sed 's/.*"\(.*\)"/\1/')}"
+export LIGHTCRAFT_ANDROID_VERSION="$VERSION"
+# versionCode grows with every release, betas included (Android refuses to update to a lower one):
+# (major*10000 + minor*100 + patch) * 100 + 1-29 alpha.N, 30-59 beta.N, 60-89 rc.N, 99 for the release
+CORE="${VERSION%%-*}"
+PRE=""; [[ "$VERSION" == *-* ]] && PRE="${VERSION#*-}"
+IFS=. read -r MA MI PA <<<"$CORE"
+N="$(grep -o '[0-9]*$' <<<"$PRE" || true)"; N="${N:-1}"; (( N > 29 )) && N=29
+case "$PRE" in
+    "") STEP=99 ;;
+    alpha*) STEP=$((0 + N)) ;;
+    beta*) STEP=$((30 + N)) ;;
+    rc*) STEP=$((60 + N)) ;;
+    *) STEP=$((0 + N)) ;;
+esac
+CODE=$(( (MA * 10000 + MI * 100 + ${PA:-0}) * 100 + STEP ))
+echo "== LightCraft for Android $VERSION (versionCode $CODE)"
 
 echo "== native library ($PROFILE)"
 cargo build --manifest-path "$ROOT/Cargo.toml" -p lightcraft-android --target aarch64-linux-android --profile "$PROFILE"

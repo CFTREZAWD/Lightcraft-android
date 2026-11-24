@@ -18,6 +18,10 @@ and open it, or run `adb install -r lightcraft-android-<version>-arm64.apk`. Nee
 - **Every pen sample** is used (up to 240 Hz), so fast strokes keep their shape.
 - Fingers: one finger acts as a mouse, two fingers pinch-zoom and pan.
 
+### Updates
+LightCraft checks for new releases at start (and in Help ▸ Check for Updates…), downloads the APK
+with its checksum verified and lets Android install it after you confirm.
+
 ### Storage
 Import uses the system file picker (no permission needed); photos are copied into the app.
 With the photos permission, the Local panel also browses Camera, Pictures and Downloads.

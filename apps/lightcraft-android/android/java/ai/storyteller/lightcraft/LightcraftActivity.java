@@ -8,6 +8,12 @@ package ai.storyteller.lightcraft;
 
 import android.Manifest;
 import android.app.NativeActivity;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.IntentFilter;
+import android.content.pm.PackageInstaller;
+import android.provider.Settings;
+import java.io.FileInputStream;
 import android.content.ClipData;
 import android.content.Context;
 import android.content.Intent;
@@ -39,10 +45,103 @@ public class LightcraftActivity extends NativeActivity {
     /** The chosen files were copied to `paths` (empty: cancelled or nothing could be read). */
     private static native void nativePicked(int id, String[] paths, String error);
 
+    /** The package installer's answer to `installApk` (`ok` false: failed or cancelled, with why). */
+    private static native void nativeInstallStatus(boolean ok, String message);
+
+    private static final String INSTALL_ACTION = "ai.storyteller.lightcraft.INSTALL_STATUS";
+    private BroadcastReceiver installReceiver;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+        installReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                int status = intent.getIntExtra(PackageInstaller.EXTRA_STATUS, PackageInstaller.STATUS_FAILURE);
+                if (status == PackageInstaller.STATUS_PENDING_USER_ACTION) {
+                    // Android's confirmation screen
+                    Intent confirm = intent.getParcelableExtra(Intent.EXTRA_INTENT);
+                    if (confirm != null) {
+                        confirm.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                        startActivity(confirm);
+                    }
+                } else if (status == PackageInstaller.STATUS_SUCCESS) {
+                    nativeInstallStatus(true, "");
+                } else {
+                    String msg = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
+                    if (status == PackageInstaller.STATUS_FAILURE_ABORTED) {
+                        msg = "cancelled";
+                    } else if (status == PackageInstaller.STATUS_FAILURE_CONFLICT || status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE) {
+                        msg = "it is signed with another key than the installed app (uninstall this one first, then install the new one from its release page)";
+                    }
+                    nativeInstallStatus(false, msg == null ? ("status " + status) : msg);
+                }
+            }
+        };
+        IntentFilter filter = new IntentFilter(INSTALL_ACTION);
+        if (Build.VERSION.SDK_INT >= 33) {
+            registerReceiver(installReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+        } else {
+            registerReceiver(installReceiver, filter);
+        }
+    }
+
+    @Override
+    protected void onDestroy() {
+        if (installReceiver != null) {
+            try {
+                unregisterReceiver(installReceiver);
+            } catch (Exception ignored) {
+            }
+        }
+        super.onDestroy();
+    }
+
+    /** Whether Android lets this app install packages (Settings ▸ Install unknown apps). */
+    public boolean canInstall() {
+        return Build.VERSION.SDK_INT < 26 || getPackageManager().canRequestPackageInstalls();
+    }
+
+    /** Open the screen where the user allows this app to install packages. */
+    public void openInstallSettings() {
+        runOnUiThread(new Runnable() { @Override public void run() {
+            try {
+                Intent i = new Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, Uri.parse("package:" + getPackageName()));
+                startActivity(i);
+            } catch (Exception ignored) {
+            }
+        }});
+    }
+
+    /** Install the APK at `path` over this app (Android asks the user to confirm). */
+    public void installApk(final String path) {
+        new Thread(new Runnable() { @Override public void run() {
+            try {
+                PackageInstaller pi = getPackageManager().getPackageInstaller();
+                PackageInstaller.SessionParams params = new PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL);
+                params.setAppPackageName(getPackageName());
+                File f = new File(path);
+                params.setSize(f.length());
+                int id = pi.createSession(params);
+                PackageInstaller.Session session = pi.openSession(id);
+                try (InputStream in = new FileInputStream(f); OutputStream out = session.openWrite("base.apk", 0, f.length())) {
+                    byte[] buf = new byte[1 << 16];
+                    int n;
+                    while ((n = in.read(buf)) > 0) {
+                        out.write(buf, 0, n);
+                    }
+                    session.fsync(out);
+                }
+                Intent done = new Intent(INSTALL_ACTION).setPackage(getPackageName());
+                int flags = PendingIntent.FLAG_UPDATE_CURRENT | (Build.VERSION.SDK_INT >= 31 ? PendingIntent.FLAG_MUTABLE : 0);
+                PendingIntent pending = PendingIntent.getBroadcast(LightcraftActivity.this, id, done, flags);
+                session.commit(pending.getIntentSender());
+                session.close();
+            } catch (Exception e) {
+                nativeInstallStatus(false, String.valueOf(e.getMessage()));
+            }
+        }}, "lc-install").start();
     }
 
     /**

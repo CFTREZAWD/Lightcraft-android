@@ -22,6 +22,7 @@
 
 pub mod paths;
 pub mod prefs;
+pub mod update;
 
 #[cfg(target_os = "android")]
 mod android;

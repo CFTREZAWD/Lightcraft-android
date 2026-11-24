@@ -17,6 +17,8 @@ use lightcraft_ui_egui::pick::{PickKind, PickRequest};
 use lightcraft_ui_egui::{LightcraftApp, Services};
 use winit::platform::android::activity::AndroidApp;
 
+mod updater;
+
 use crate::paths::{self, AppDirs};
 use crate::prefs;
 
@@ -77,6 +79,30 @@ impl Activity {
             let s = env.new_string(url)?;
             env.call_method(act, "openUrl", "(Ljava/lang/String;)V", &[JValue::Object(&s)]).map(|_| ())
         })
+    }
+
+    /// Android lets this app install packages (Settings ▸ Install unknown apps).
+    fn can_install(&self) -> bool {
+        self.with(|env, act| env.call_method(act, "canInstall", "()Z", &[])?.z()).unwrap_or(false)
+    }
+
+    fn open_install_settings(&self) {
+        let _ = self.with(|env, act| env.call_method(act, "openInstallSettings", "()V", &[]).map(|_| ()));
+    }
+
+    /// Hand a downloaded APK to the package installer (the answer comes back through
+    /// `nativeInstallStatus`).
+    fn install_apk(&self, path: &std::path::Path) {
+        let path = path.to_string_lossy().into_owned();
+        let r = self.with(|env, act| {
+            let s = env.new_string(&path)?;
+            env.call_method(act, "installApk", "(Ljava/lang/String;)V", &[JValue::Object(&s)]).map(|_| ())
+        });
+        if let Err(e) = r
+            && let Ok(mut g) = updater::install_result().lock()
+        {
+            *g = Some(Err(e));
+        }
     }
 
     fn request_media_access(&self) {
@@ -152,7 +178,25 @@ pub extern "system" fn Java_ai_storyteller_lightcraft_LightcraftActivity_nativeP
     }
 }
 
-fn services(activity: &Activity, dirs: &AppDirs) -> Services {
+/// `LightcraftActivity.nativeInstallStatus`: the package installer's answer (a success ends the
+/// process as Android replaces the app, so it is rarely seen).
+#[unsafe(no_mangle)]
+pub extern "system" fn Java_ai_storyteller_lightcraft_LightcraftActivity_nativeInstallStatus<'l>(
+    mut env: jni::JNIEnv<'l>,
+    _class: JObject<'l>,
+    ok: jni::sys::jboolean,
+    message: JString<'l>,
+) {
+    let msg: String = if message.is_null() { String::new() } else { env.get_string(&message).map(String::from).unwrap_or_default() };
+    if let Ok(mut g) = updater::install_result().lock() {
+        *g = Some(if ok != 0 { Ok(()) } else { Err(if msg.is_empty() { "cancelled".into() } else { msg }) });
+    }
+    if let Some(ctx) = repaint_ctx().get() {
+        ctx.request_repaint();
+    }
+}
+
+fn services(activity: &Activity, dirs: &AppDirs, update_requested: std::sync::Arc<std::sync::atomic::AtomicBool>) -> Services {
     let picker_activity = activity.clone();
     let url_activity = activity.clone();
     let originals = dirs.originals();
@@ -190,6 +234,8 @@ fn services(activity: &Activity, dirs: &AppDirs) -> Services {
             }
             url_activity.open_url(url)
         })),
+        // Help ▸ Check for Updates…: this app's releases, not the desktop packages
+        check_updates: Some(Box::new(move || update_requested.store(true, std::sync::atomic::Ordering::Relaxed))),
         write_shared: Some(std::sync::Arc::new(lightcraft_engine::export::write_file)),
         write: Some(Box::new(lightcraft_engine::export::write_file)),
         write_new: Some(Box::new(lightcraft_engine::export::write_file_new)),
@@ -282,6 +328,7 @@ struct App {
     keyboard: bool,
     /// The app had the focus last frame (leaving it saves).
     focused: bool,
+    updater: updater::Updater,
 }
 
 impl App {
@@ -312,6 +359,7 @@ impl eframe::App for App {
         if let Err(e) = self.prefs.tick(&self.app.ui, self.app.tick_now()) {
             log::warn!("{e}");
         }
+        self.updater.tick(ctx);
         // the soft keyboard follows the text focus
         let wants = ctx.egui_wants_keyboard_input();
         if wants != self.keyboard {
@@ -333,6 +381,7 @@ impl eframe::App for App {
             self.app.renderer.set_screen_textures(Box::new(t));
         }
         self.app.ui(ui);
+        self.updater.show(ui.ctx(), &self.activity);
     }
 
     fn on_exit(&mut self) {
@@ -392,7 +441,8 @@ fn android_main(app: AndroidApp) {
         Box::new(move |cc| {
             let _ = repaint_ctx().set(cc.egui_ctx.clone());
             let (session, problem) = open_session(&dirs);
-            let mut lc = LightcraftApp::new(session, services(&activity, &dirs));
+            let updater = updater::Updater::new(dirs.config().join("android-updates.json"), dirs.cache.join("update"));
+            let mut lc = LightcraftApp::new(session, services(&activity, &dirs, updater.requested.clone()));
             if let Some(ui) = saved {
                 lc.ui = ui;
             }
@@ -407,7 +457,7 @@ fn android_main(app: AndroidApp) {
             let prefs = prefs::Writer::new(Some(prefs_path), &lc.ui);
             let gpu_on = lc.ui.settings.gpu;
             let textures = cc.wgpu_render_state.as_ref().filter(|_| gpu_on).map(|rs| adopt_window_device(rs, &cc.egui_ctx));
-            Ok(Box::new(App { app: lc, prefs, textures, activity, keyboard: false, focused: true }))
+            Ok(Box::new(App { app: lc, prefs, textures, activity, keyboard: false, focused: true, updater }))
         }),
     );
     if let Err(e) = result {

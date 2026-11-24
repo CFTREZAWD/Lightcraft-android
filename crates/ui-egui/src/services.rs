@@ -46,6 +46,9 @@ pub type HostAction = Box<dyn FnMut(&mut Session) -> Result<Value, String>>;
 /// The system's dark/light appearance where egui doesn't report one (Linux desktops whose
 /// windowing layer says nothing, e.g. many Wayland compositors). The host answers from what it
 /// last heard and wakes the UI itself when that changes; it is never polled for changes.
+/// A host-side update check: called when the user asks for one.
+pub type HostCheck = Box<dyn FnMut()>;
+
 pub type SystemThemeFn = Box<dyn Fn(&egui::Context) -> Option<egui::Theme>>;
 
 /// Platform services injected by the host app (desktop or web).
@@ -130,4 +133,7 @@ pub struct Services {
     pub restore_library: Option<HostAction>,
     /// The system appearance for Appearance Mode ▸ Auto, ahead of egui's own report.
     pub system_theme: Option<SystemThemeFn>,
+    /// Help ▸ Check for Updates… handled by the host (Android: its own releases and installer)
+    /// instead of the desktop updater, which offers the desktop packages.
+    pub check_updates: Option<HostCheck>,
 }

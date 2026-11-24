@@ -248,6 +248,8 @@ pub(crate) fn services(cc: &eframe::CreationContext<'_>, log_file: Option<&std::
         backup_library: None,
         restore_library: None,
         system_theme: appearance::service(),
+        // the desktop updater (craft-update) answers Help ▸ Check for Updates…
+        check_updates: None,
     }
 }
 

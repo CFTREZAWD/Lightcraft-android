@@ -20,7 +20,10 @@ lightcraft-ui-egui = { workspace = true }
 lightcraft-codecs = { workspace = true }
 lightcraft-raster = { workspace = true }
 egui = { workspace = true }
+serde = { workspace = true }
 serde_json = { workspace = true }
+# HTTPS (rustls) and checked downloads, for updates
+lightcraft-fetch = { workspace = true }
 log = { workspace = true }
 
 [target.'cfg(target_os = "android")'.dependencies]

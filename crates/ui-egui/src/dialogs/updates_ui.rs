@@ -75,6 +75,11 @@ pub(crate) fn blocks_input(app: &LightcraftApp) -> bool {
 }
 
 pub(crate) fn check(app: &mut LightcraftApp) -> Result<Value, String> {
+    // a host with its own updater (Android) answers instead
+    if let Some(host) = app.services.check_updates.as_mut() {
+        host();
+        return Ok(Value::Null);
+    }
     #[cfg(not(target_arch = "wasm32"))]
     {
         app.updates_rt.check_requested = true;
