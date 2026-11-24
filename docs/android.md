@@ -67,6 +67,12 @@ Fingers still work everywhere: one finger acts as a mouse, two fingers pinch-zoo
 The state machine works on plain data, so its tests run on any machine:
 `cargo test -p lightcraft-android` builds `stylus.rs` into the host test binary.
 
+## Screen
+
+The app runs full screen: Android's status bar (clock, notifications) and navigation bar are
+hidden, since they would cover the top bar's menus and the side panels. Swipe from the top or
+bottom edge to show them for a moment.
+
 ## Storage
 
 - The library, settings and caches live in the app's private storage (removed with the app).

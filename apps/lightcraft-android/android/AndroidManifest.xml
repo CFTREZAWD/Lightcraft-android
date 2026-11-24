@@ -24,7 +24,7 @@
         android:extractNativeLibs="true"
         android:largeHeap="true"
         android:resizeableActivity="true"
-        android:theme="@android:style/Theme.DeviceDefault.NoActionBar">
+        android:theme="@android:style/Theme.DeviceDefault.NoActionBar.Fullscreen">
         <activity
             android:name=".LightcraftActivity"
             android:exported="true"
