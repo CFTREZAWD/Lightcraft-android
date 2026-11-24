@@ -2,8 +2,8 @@
 ([storytold/lightcraft](https://github.com/storytold/lightcraft) 0.21.1) on Android tablets and phones, with
 Samsung S Pen and other active-pen support.
 
-> **Beta.** This build compiles, packages and signs cleanly, but it hasn't been tried on a device yet.
-> Please report what happens on yours, with the output of `adb logcat -s LightCraft` if it fails.
+> **Beta.** Please report what happens on your device, with the output of `adb logcat -s LightCraft`
+> if something fails.
 
 ### Install
 Download `lightcraft-android-<version>-arm64.apk`, allow installs from your browser or file manager,
@@ -31,6 +31,7 @@ Exports go to `Pictures/LightCraft`.
 arm64 only · no SAM 3 AI masks (the model is several GB; denoise is included) · no TalkBack ·
 some predictive keyboards may not type correctly · one library, in the app's storage · desktop
 layout (best on a tablet) · Chinese and Japanese text isn't rendered (fonts not bundled).
-The APK is signed with a debug key, so a future release signed with another key needs an uninstall first.
+From 0.21.1-beta.2 on, releases are signed with one key and update each other in place; coming from
+0.21.1-beta.1 (or a test build), uninstall it once first.
 
 Details: [docs/android.md](https://github.com/CFTREZAWD/Lightcraft-android/blob/HEAD/docs/android.md).
