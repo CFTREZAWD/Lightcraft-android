@@ -23,7 +23,8 @@ LightCraft checks for new releases at start (and in Help â–¸ Check for Updatesâ€
 with its checksum verified and lets Android install it after you confirm.
 
 ### Storage
-Import uses the system file picker (no permission needed); photos are copied into the app.
+Import opens Android's photo picker (the gallery; no permission needed); photos are copied into the app.
+Raw files the gallery doesn't list are in the Local panel.
 With the photos permission, the Local panel also browses Camera, Pictures and Downloads.
 Exports go to `Pictures/LightCraft`.
 

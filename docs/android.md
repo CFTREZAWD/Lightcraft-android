@@ -76,9 +76,12 @@ bottom edge to show them for a moment.
 ## Storage
 
 - The library, settings and caches live in the app's private storage (removed with the app).
-- **Import** uses the system file picker: no permission is needed, and each chosen photo is copied
-  into the app's `Originals` folder, which the library references. Raw files that providers don't
-  type as images are offered too (`application/octet-stream`).
+- **Import** opens Android's photo picker (your gallery: Android 13+, and Android 11-12 with the
+  Google Play photo picker update); elsewhere, the system file picker. Neither needs a permission:
+  each chosen photo is copied into the app's `Originals` folder, which the library references.
+  The photo picker shows what the gallery shows: raw files it doesn't list (often CR3, NEF, ARW…)
+  are reached through the Local panel, and Android removes the GPS location from photos chosen
+  there (a privacy rule of the photo picker).
 - With the photos permission (asked once at first launch), the **Local** panel also browses
   Camera (DCIM), Pictures and Downloads in place.
 - **Exports** and other saved files go to `Pictures/LightCraft`, where the gallery shows them.

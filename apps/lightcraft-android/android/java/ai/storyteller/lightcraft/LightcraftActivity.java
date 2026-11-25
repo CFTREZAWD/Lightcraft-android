@@ -22,6 +22,8 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.ext.SdkExtensions;
+import android.provider.MediaStore;
 import android.provider.OpenableColumns;
 import android.view.View;
 import android.view.Window;
@@ -195,6 +197,21 @@ public class LightcraftActivity extends NativeActivity {
      */
     public void pick(final int id, final String[] mimes, final boolean multiple, final String destDir) {
         runOnUiThread(new Runnable() { @Override public void run() {
+            pendingDest = destDir;
+            // photos: Android's photo picker (the gallery), where there is one
+            if (mimes.length > 0 && mimes[0].startsWith("image/") && hasPhotoPicker()) {
+                try {
+                    Intent intent = new Intent(MediaStore.ACTION_PICK_IMAGES);
+                    intent.setType("image/*");
+                    if (multiple) {
+                        intent.putExtra(MediaStore.EXTRA_PICK_IMAGES_MAX, MediaStore.getPickImagesMaxLimit());
+                    }
+                    startActivityForResult(intent, PICK_BASE + id);
+                    return;
+                } catch (Exception e) {
+                    // no photo picker after all: the file picker below
+                }
+            }
             try {
                 Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
                 intent.addCategory(Intent.CATEGORY_OPENABLE);
@@ -203,12 +220,19 @@ public class LightcraftActivity extends NativeActivity {
                     intent.putExtra(Intent.EXTRA_MIME_TYPES, mimes);
                 }
                 intent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, multiple);
-                pendingDest = destDir;
                 startActivityForResult(intent, PICK_BASE + id);
             } catch (Exception e) {
                 nativePicked(id, new String[0], "The file picker couldn't open: " + e);
             }
         }});
+    }
+
+    /** Android 13+, and Android 11-12 with the photo picker update from Google Play. */
+    private static boolean hasPhotoPicker() {
+        if (Build.VERSION.SDK_INT >= 33) {
+            return true;
+        }
+        return Build.VERSION.SDK_INT >= 30 && SdkExtensions.getExtensionVersion(Build.VERSION_CODES.R) >= 2;
     }
 
     private String pendingDest = null;
