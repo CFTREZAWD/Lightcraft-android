@@ -77,7 +77,9 @@ public class LightcraftActivity extends NativeActivity {
                 } else {
                     String msg = intent.getStringExtra(PackageInstaller.EXTRA_STATUS_MESSAGE);
                     if (status == PackageInstaller.STATUS_FAILURE_ABORTED) {
-                        msg = "cancelled";
+                        // also what Samsung's Auto Blocker answers: it blocks every app install outside the stores
+                        msg = "it was cancelled. On a Samsung device, Auto Blocker stops app installs outside the stores: "
+                                + "turn it off (Settings > Security and privacy > Auto Blocker), update, then turn it back on if you like";
                     } else if (status == PackageInstaller.STATUS_FAILURE_CONFLICT || status == PackageInstaller.STATUS_FAILURE_INCOMPATIBLE) {
                         msg = "it is signed with another key than the installed app (uninstall this one first, then install the new one from its release page)";
                     }
