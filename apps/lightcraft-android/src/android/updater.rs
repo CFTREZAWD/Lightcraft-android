@@ -68,6 +68,15 @@ fn fetch_releases(cancel: &AtomicBool) -> Result<serde_json::Value, String> {
     let limits = Limits { connect: std::time::Duration::from_secs(15), stall: std::time::Duration::from_secs(30), cancel };
     let headers = [("Accept", "application/vnd.github+json".to_string()), ("X-GitHub-Api-Version", "2022-11-28".to_string())];
     let mut resp = get(&url, &headers, &limits).map_err(|e| e.to_string())?;
+    if resp.status == 404 {
+        // GitHub answers 404, not 403, for a private repository asked without signing in
+        return Err(format!(
+            "{} github.com/{} ({})",
+            tr("No releases were found at"),
+            update::REPO,
+            tr("updates need the repository to be public")
+        ));
+    }
     if resp.status != 200 {
         return Err(format!("GitHub answered {}", resp.status));
     }

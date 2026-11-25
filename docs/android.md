@@ -44,6 +44,8 @@ LightCraft for Android updates itself from this repository's releases:
   `ANDROID_KEYSTORE_PASSWORD` and `ANDROID_KEY_ALIAS`. Without them every release gets a new debug
   key and the update is refused ("signed with another key"): uninstall, then install the new one.
   `0.21.1-beta.1` was signed that way and has no updater: install the next release by hand once.
+- The repository must be **public**: GitHub answers 404 to an app asking about a private one, and
+  an app can't safely carry a token (anyone with the APK could read it).
 - The version the updater compares is the release's (`LIGHTCRAFT_ANDROID_VERSION`, from its tag);
   `versionCode` grows with every release, betas included. A build for a fork looks for that
   fork's releases (`LIGHTCRAFT_UPDATE_REPO`, set by the workflow).
