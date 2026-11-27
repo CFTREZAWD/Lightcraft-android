@@ -129,3 +129,28 @@ mod tests {
         assert!(!unique_name("../x", |_| false).contains('/'));
     }
 }
+
+/// The device's memory in bytes, from `/proc/meminfo`'s `MemTotal` line (`None` when absent).
+pub fn total_memory(meminfo: &str) -> Option<u64> {
+    let line = meminfo.lines().find(|l| l.starts_with("MemTotal:"))?;
+    let kb: u64 = line.split_whitespace().nth(1)?.parse().ok()?;
+    kb.checked_mul(1024)
+}
+
+/// Below this much memory, AI masks (SAM 3, several GB while it runs) may get the app closed by
+/// Android. A device sold with 8 GB reports a little over 7 GiB.
+pub const AI_MASK_MEMORY: u64 = 7 * 1024 * 1024 * 1024;
+
+#[cfg(test)]
+mod memory_tests {
+    use super::*;
+
+    #[test]
+    fn meminfo_gives_the_total_in_bytes() {
+        let m = "MemFree:  100 kB\nMemTotal:       7801564 kB\nBuffers: 1 kB\n";
+        let t = total_memory(m);
+        assert!(t.is_some_and(|b| b > AI_MASK_MEMORY), "an 8 GB tablet passes");
+        assert!(total_memory("MemTotal: 3800000 kB").is_some_and(|b| b < AI_MASK_MEMORY));
+        assert!(total_memory("garbage").is_none());
+    }
+}

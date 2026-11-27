@@ -15,7 +15,7 @@ name = "lightcraft_android"
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-lightcraft-engine = { workspace = true, features = ["denoise"] }
+lightcraft-engine = { workspace = true, features = ["denoise", "sam"] }
 lightcraft-ui-egui = { workspace = true }
 lightcraft-codecs = { workspace = true }
 lightcraft-raster = { workspace = true }

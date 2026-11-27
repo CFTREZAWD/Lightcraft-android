@@ -95,8 +95,11 @@ bottom edge to show them for a moment.
 ## Known limits
 
 - arm64 only (`arm64-v8a`); 32-bit and x86_64 aren't built.
-- AI masks with SAM 3 (Object / Describe) are left out, as in the web build: the model is several
-  gigabytes. Denoise is included.
+- AI masks (Object, Describe, Lens Blur's Find Subject) run SAM 3 on the **CPU** (candle has no
+  Android GPU backend): the model is downloaded on first use (about 3.4 GB, into the app's storage),
+  needs several GB of memory while it runs, and analysing a photo takes much longer than on a
+  desktop GPU. On a device with less than about 8 GB of memory, the app says once that Android may
+  close it while a mask is computed. Every other feature works without the model.
 - Text input uses the system keyboard through the native activity's key events: plain text works;
   some keyboards' composing (predictive) input may not.
 - Choosing a library folder (Settings ▸ Open Library…) and the dialogs' own Browse… buttons aren't

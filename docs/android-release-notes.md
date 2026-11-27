@@ -29,7 +29,7 @@ With the photos permission, the Local panel also browses Camera, Pictures and Do
 Exports go to `Pictures/LightCraft`.
 
 ### Known limits
-arm64 only · no SAM 3 AI masks (the model is several GB; denoise is included) · no TalkBack ·
+arm64 only · AI masks run on the CPU (slow; a 3.4 GB download on first use; 8 GB of memory recommended) · no TalkBack ·
 some predictive keyboards may not type correctly · one library, in the app's storage · desktop
 layout (best on a tablet) · Chinese and Japanese text isn't rendered (fonts not bundled).
 From 0.21.1-beta.2 on, releases are signed with one key and update each other in place; coming from

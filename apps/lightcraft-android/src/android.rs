@@ -264,6 +264,9 @@ fn open_session(dirs: &AppDirs) -> (Session, Option<String>) {
         }
     }
     s = s.with_default_lens_database().with_lens_auto_download();
+    // AI masks (Object, Describe, Find Subject): the SAM 3 model, downloaded on first use into
+    // <config>/models/sam3; runs on the CPU here
+    s = s.with_default_sam3_model();
     s.face_models_dir = lightcraft_engine::config::default_face_models_dir();
     s.slide_templates_dir = lightcraft_engine::config::config_dir().map(|d| d.join(lightcraft_engine::slide_template::DIR_NAME));
     (s, None)
@@ -395,6 +398,23 @@ impl eframe::App for App {
     }
 }
 
+/// Once per install, on a device with little memory: AI masks may get the app closed.
+fn ai_mask_memory_notice(dirs: &AppDirs) -> Option<String> {
+    let total = paths::total_memory(&std::fs::read_to_string("/proc/meminfo").ok()?)?;
+    let marker = dirs.config().join("ai-mask-memory-warned");
+    if total >= paths::AI_MASK_MEMORY || marker.exists() {
+        return None;
+    }
+    let _ = std::fs::write(&marker, b"");
+    Some(format!(
+        "{} ({:.1} GB)",
+        lightcraft_ui_egui::i18n::tr(
+            "AI masks need several GB of memory while they run; on this device Android may close LightCraft while one is computed. Everything else works as usual"
+        ),
+        total as f64 / 1e9
+    ))
+}
+
 /// Point the engine at the app's folders. Runs first in `android_main`, before any other thread
 /// of ours exists.
 fn set_up_environment(dirs: &AppDirs) {
@@ -449,6 +469,9 @@ fn android_main(app: AndroidApp) {
             lightcraft_ui_egui::i18n::set_language(lc.ui.language);
             lc.notices.extend(prefs_warning);
             lc.notices.extend(problem);
+            if let Some(n) = ai_mask_memory_notice(&dirs) {
+                lc.notices.push(n);
+            }
             lc.gpu_notice = true;
             lc.disk_space_notice = true;
             if lc.session.catalog.is_empty() {
