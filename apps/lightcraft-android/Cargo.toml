@@ -33,5 +33,5 @@ wgpu = { workspace = true, features = ["gles"] }
 # the patched winit (third_party/winit, patch A1): pen pressure, hover, side button, palm rejection
 winit = { version = "0.30", default-features = false, features = ["android-native-activity"] }
 android_logger = { version = "0.15", default-features = false }
-jni = "0.21"
+jni = "0.22"
 
